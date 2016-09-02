@@ -6,7 +6,7 @@ This code sample is the implementation of the assignments from the Coursera Cour
 
 Specifically, this is [Assignment #4](https://www.coursera.org/learn/server-side-development/peer/CnyR4/assignment4) which is for the msot part a combinaation of Assignments 1-4 (see [here](https://www.coursera.org/learn/server-side-development/home/assignments) for more details).
 
-Required node packages (run npm install \<package_name>):  
+Required node packages (npm install \<package_name>):  
 mongoose  
 mongoose-currency  
 passport  
