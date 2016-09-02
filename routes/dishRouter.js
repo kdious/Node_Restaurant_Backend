@@ -20,8 +20,12 @@ appRouter.use(bodyParser.json());
 // Configure the varioues routes for the /dishes route
 // 1. /dishes route
 appRouter.route('/')    
+    // You MUST be a system user in order to 
+    // even view the list of favorite dishes    
+    .all(Verify.verifyOrdinaryUser)    
+
     // Get the dish info for dishes and send it back  
-    .get(Verify.verifyOrdinaryUser, function (req, res, next) {
+    .get(function (req, res, next) {
         Dishes.find({})
             .populate('comments.postedBy') // Use mongoose population to populate the "postedBy" field with the user info
             .exec(function (err, dish) {
@@ -32,7 +36,7 @@ appRouter.route('/')
     
     // Only admin users can post new dishes to the database
     // So we must make sure the user is both an ordinary user and an Admin user
-    .post(Verify.verifyOrdinaryUser, Verify.verifyAdmin, function (req, res, next) {
+    .post(Verify.verifyAdmin, function (req, res, next) {
         // Create the new dish and send the response back        
         Dishes.create(req.body, function (err, dish) {
             if (err) {
@@ -51,7 +55,7 @@ appRouter.route('/')
 
     // Only admin users can delete dishes from the database
     // So we must make sure the user is both an ordinary user and an Admin user
-    .delete(Verify.verifyOrdinaryUser, Verify.verifyAdmin, function (req, res, next) {
+    .delete(Verify.verifyAdmin, function (req, res, next) {
         // Delete all dishes from the datavase and send an empty response back         
         Dishes.remove({}, function (err, resp) {
             if (err) {
@@ -63,6 +67,10 @@ appRouter.route('/')
 
 // 2. /dishes/:dishId where dishId is the ID of a specific dish
 appRouter.route('/:dishId')
+    // You MUST be a system user in order to 
+    // even view comments associated with a dish    
+    .all(Verify.verifyOrdinaryUser)    
+
     // Get the dish info for a specific dish and send it back
     .get(function (req, res, next) {
         Dishes.findById(req.params.dishId)
@@ -75,7 +83,7 @@ appRouter.route('/:dishId')
 
     // Only admin users can add/update dishes to the database
     // So we must make sure the user is both an ordinary user and an Admin user
-    .put(Verify.verifyOrdinaryUser, Verify.verifyAdmin, function (req, res, next) {
+    .put(Verify.verifyAdmin, function (req, res, next) {
         // Search for the dish an dupdate it.  
         // If the dish doesn't already exist, 
         // create a new one and add it to the database        
@@ -94,7 +102,7 @@ appRouter.route('/:dishId')
 
     // Only admin users can remove dishes from the database
     // So we must make sure the user is both an ordinary user and an Admin user
-    .delete(Verify.verifyOrdinaryUser, Verify.verifyAdmin, function (req, res, next) {
+    .delete(Verify.verifyAdmin, function (req, res, next) {
         Dishes.findByIdAndRemove(req.params.dishId,
             function (err, resp) {
                 if (err) {
