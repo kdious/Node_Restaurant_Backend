@@ -1,7 +1,7 @@
 // ========================================================================
 // Filename:    favoriteRouter.js
 // Author:      Kevin Dious (kdious@gmail.com)
-// Description: Handles all routes under the /favorites route 
+// Description: Handles all routes under the /favorites route
 // ========================================================================
 
 // Required modules, schemas, configuration files, etc.
@@ -21,8 +21,8 @@ appRouter.use(bodyParser.json());
 // Configure the varioues routes for the /dishes route
 // 1. /favorites route
 appRouter.route('/')
-    // You MUST be a system user in order to 
-    // even view the list of favorite dishes    
+    // You MUST be a system user in order to
+    // even view the list of favorite dishes
     .all(Verify.verifyOrdinaryUser)
 
     // Get a user's list of favorite dishes
@@ -39,25 +39,33 @@ appRouter.route('/')
 
     // Add a dish to a user's favorites list
     .post(function (req, res, next) {
-        // Grab the userId from the decoded token        
+        // Grab the userId from the decoded token
         userId = req.decoded._doc._id;
 
-        // See if there is a favorites list for this user
-        favoriteDish = req.body;        
+        // Get the dish object from the request message body
+        favoriteDish = req.body;
+
+        // See if the dish ID sent by the user is a valid dish
         Dishes.findById(favoriteDish._id, function (err, favoriteDish) {
             if (err) throw err;
             if(favoriteDish) {
+                // Find the favorites list for this user
                 Favorites.findOne({'user': userId}, function (err, favoritesList) {
                     if (err) throw err;
                     if(favoritesList) {
-                        favoriteDishFound = false;                         
-                        for (var i = 0; i < favoritesList.dishes.length; i++) {                                                    
+                        // If the user has a favorites list, search the list
+                        // of dishes to see if the dish submitted by the
+                        // user is already present in their facorites list
+                        favoriteDishFound = false;
+                        for (var i = 0; i < favoritesList.dishes.length; i++) {
                             if (favoritesList.dishes[i].toString() == favoriteDish._id) {
                                 favoriteDishFound = true;
                                 break;
                             }
                         }
-                        if (favoriteDishFound == false) {                      
+                        if (favoriteDishFound == false) {
+                            // If the dish is not in the user's favorites list
+                            // add it to the user's favorites list
                             favoritesList.dishes.push(favoriteDish._id);
                             favoritesList.save(function (err, result) {
                                 if (err) throw err;
@@ -65,15 +73,20 @@ appRouter.route('/')
                             });
                         }
                         else {
-                            res.status(400).send('Dish ' + favoriteDish._id + ' is already in the favorites list');    
+                            // Send the user an error indicating that the
+                            // dish is already in their favorites list
+                            res.status(400).send('Dish ' + favoriteDish._id + ' is already in the favorites list');
                         }
                     }
                     else {
-                        // Create Favorites list
+                        // Create a new Favorites list for the user
                         Favorites.create({}, function (err, newFavoritesList) {
                             if (err) {
                                 throw err;
                             }
+
+                            // Add the dish to the newly
+                            // created favorites list
                             newFavoritesList.user = userId;
                             newFavoritesList.dishes.push(favoriteDish._id);
 
@@ -86,7 +99,9 @@ appRouter.route('/')
                 });
             }
             else {
-                return next(err);
+                // Inform the user that the dishId
+                // that they sent is not a valid dish
+                res.status(400).send('Dish ' + favoriteDish._id + ' is not a valid dish');
             }
         });
     })
@@ -96,41 +111,59 @@ appRouter.route('/')
         userId = req.decoded._doc._id;
         Favorites.remove({'user': userId}, function (err) {
             if (err) throw err;
-            res.status(200).send('All favorites removed for this user');  
+            res.status(200).send('All favorites removed for this user');
         });
     });
 
 // 2. /favorites/:dishObjectId route
-//    Handle getting/removing the specified dish from the user's list of favorites
+//    Handle getting/removing the specified dish
+//    from the user's list of favorites
 appRouter.route('/:dishObjectId')
 
     // Remove the specified dish from the user's favorites list
     .delete(Verify.verifyOrdinaryUser, function (req, res, next) {
+        // Get the user ID from the decoded jasonwebtoken
         userId = req.decoded._doc._id;
+
+        // Get the ID of the dish to remove
+        // from the URL path
         dishIdToRemove = req.params.dishObjectId;
+
+        // CHeck to see if this user has a favorites list
         Favorites.findOne({'user': userId}, function (err, favoritesList) {
             if (err) throw err;
             if(favoritesList) {
-                dishRemoved = false;                         
-                for (var i = 0; i < favoritesList.dishes.length; i++) {                                                    
+                // If the user has a favorites list, see if
+                // the specified dish exists in their favorites list
+                dishRemoved = false;
+                for (var i = 0; i < favoritesList.dishes.length; i++) {
                     if (favoritesList.dishes[i].toString() == dishIdToRemove) {
-                        favoritesList.dishes.splice(i, 1);                        
+                        // If the dish is present in the user's favorites list,
+                        // remove the dish from the favorites list
+                        favoritesList.dishes.splice(i, 1);
                         dishRemoved = true;
                         break;
                     }
                 }
-                if (dishRemoved == true) {                      
+                if (dishRemoved == true) {
+                    // If the dish was removed, save
+                    // the updated the favorites list
                     favoritesList.save(function (err, result) {
                         if (err) throw err;
                         res.json(result);
                     });
                 }
                 else {
-                    res.status(400).send('Dish ' + dishIdToRemove + ' was not in the favorites list');    
+                    // Send an error to the user indicating
+                    // that the dish was not present in
+                    // their favorites list
+                    res.status(400).send('Dish ' + dishIdToRemove + ' was not in the favorites list');
                 }
             }
             else {
-                res.status(400).send('There are no dishes in the favorites list');    
+                // Send an error to the user indicating 
+                // that the user has no dishes in their favorites list
+                res.status(400).send('There are no dishes in the favorites list');
             }
         });
     });

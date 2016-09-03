@@ -1,7 +1,7 @@
 // ========================================================================
 // Filename:    users.js
 // Author:      Kevin Dious (kdious@gmail.com)
-// Description: Handles all routes under the /users route 
+// Description: Handles all routes under the /users route
 // ========================================================================
 
 // Required modules, schemas, configuration files, etc.
@@ -38,7 +38,7 @@ router.post('/register', function(req, res) {
             if(req.body.lastname) {
                 user.lastname = req.body.lastname;
             }
-            
+
             // Save the new user
             user.save(function(err,user) {
                 passport.authenticate('local')(req, res, function () {
@@ -49,7 +49,7 @@ router.post('/register', function(req, res) {
     );
 });
 
-// 2. /users/login route
+// 3. /users/login route
 //    Used for users to login into the system
 router.post('/login', function(req, res, next) {
     // Cjec the user's credentials and try to authenticate them
@@ -57,7 +57,7 @@ router.post('/login', function(req, res, next) {
         if (err) {
             return next(err);
         }
-        
+
         // If user doesn't exist in the system, send a HTTP 401 error
         if (!user) {
             return res.status(401).json({
@@ -84,13 +84,13 @@ router.post('/login', function(req, res, next) {
     })(req, res, next);
 });
 
-// 3. /users/logout route
+// 4. /users/logout route
 //    Used for users to logout of the system
 router.get('/logout', function(req, res) {
-    
+
     // Destroy the current session
     req.logout();
-    
+
     // Send a simple response
     res.status(200).json({
         status: 'Bye!'

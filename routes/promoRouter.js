@@ -1,7 +1,7 @@
 // ========================================================================
 // Filename:    promoRouter.js
 // Author:      Kevin Dious (kdious@gmail.com)
-// Description: Handles all routes under the /promotions route 
+// Description: Handles all routes under the /promotions route
 // ========================================================================
 
 // Required modules, schemas, configuration files, etc.
@@ -22,10 +22,10 @@ appRouter.use(bodyParser.json());
 // 1. /promotions route
 //    Get/Add/Remove promotions from the company promotions list
 appRouter.route('/')
-    // You MUST be a system user in order to 
-    // even view the list of leaders    
+    // You MUST be a system user in order to
+    // even view the list of leaders
     .all(Verify.verifyOrdinaryUser)
-    
+
     // Retrieve all promotions and return them in the response
     .get(function (req, res, next) {
         Promotions.find({}, function (err, promotions) {
@@ -64,11 +64,11 @@ appRouter.route('/')
         });
     });
 
-// 1. /promotions/:id route
+// 2. /promotions/:id route
 //    Get/Update/Remove the specified promotion to/from the database
 appRouter.route('/:id')
-    // You MUST be a system user in order to 
-    // even view the list of leaders    
+    // You MUST be a system user in order to
+    // even view the list of leaders
     .all(Verify.verifyOrdinaryUser)
 
     // Retrieve and return the soecified promotion
