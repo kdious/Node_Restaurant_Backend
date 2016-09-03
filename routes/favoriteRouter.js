@@ -28,7 +28,7 @@ appRouter.route('/')
     // Get a user's list of favorite dishes
     .get(function (req, res, next) {
         userId = req.decoded._doc._id;
-        Favorites.findById(userId)
+        Favorites.findOne({'user': userId})
             .populate('user')       // Use mongoose population to populate the "user" field with the user info
             .populate('dishes')     // Use mongoose population to populate the info for each dish in the list with the dish info
             .exec(function (err, favoriteDishes) {
@@ -43,76 +43,95 @@ appRouter.route('/')
         userId = req.decoded._doc._id;
 
         // See if there is a favorites list for this user
-        Favorites.findById(userId, function (err, favorite) {
+        favoriteDish = req.body;        
+        Dishes.findById(favoriteDish._id, function (err, favoriteDish) {
             if (err) throw err;
-            Dishes.findById(favoriteDish._id, function (err, favoriteDish) {
-                if (err) throw err;
-                if(favoriteDish) {
-                    Favorites.findById(dishId, function (err, favoritesList) {
-                        if (err) throw err;
-                        if(favoritesList) {
-                            favoritesList.user = userId;
-                            favoritesList.dishes.push(favoriteDish);
-                            res.json(favoritesList);
+            if(favoriteDish) {
+                Favorites.findOne({'user': userId}, function (err, favoritesList) {
+                    if (err) throw err;
+                    if(favoritesList) {
+                        favoriteDishFound = false;                         
+                        for (var i = 0; i < favoritesList.dishes.length; i++) {                                                    
+                            if (favoritesList.dishes[i].toString() == favoriteDish._id) {
+                                favoriteDishFound = true;
+                                break;
+                            }
                         }
-                        else {
-                            // Create Favorites list
-                            Favorites.create(req.body, function (err, newFavoritesList) {
-                                if (err) {
-                                    throw err;
-                                }
-                                newFavoritesList.user = req.decoded._doc._id;
-                                newFavoritesList.dishes.push(favoriteDish);
-
-                                newFavoritesList.save(function (err, result) {
-                                    if (err) throw err;
-                                    res.json(newFavoritesList);
-                                });
+                        if (favoriteDishFound == false) {                      
+                            favoritesList.dishes.push(favoriteDish._id);
+                            favoritesList.save(function (err, result) {
+                                if (err) throw err;
+                                res.json(result);
                             });
                         }
-                    });
-                }
-                else {
-                    return next(err);
-                }
-            });
+                        else {
+                            res.status(400).send('Dish ' + favoriteDish._id + ' is already in the favorites list');    
+                        }
+                    }
+                    else {
+                        // Create Favorites list
+                        Favorites.create({}, function (err, newFavoritesList) {
+                            if (err) {
+                                throw err;
+                            }
+                            newFavoritesList.user = userId;
+                            newFavoritesList.dishes.push(favoriteDish._id);
+
+                            newFavoritesList.save(function (err, result) {
+                                if (err) throw err;
+                                res.json(result);
+                            });
+                        });
+                    }
+                });
+            }
+            else {
+                return next(err);
+            }
         });
     })
 
     // Delete an entire favorites list for a particular user
     .delete(function (req, res, next) {
         userId = req.decoded._doc._id;
-        Favorites.findById(userId, function (err, favoritesList) {
+        Favorites.remove({'user': userId}, function (err) {
             if (err) throw err;
-            for (var i = (dish.favoritesList.length - 1); i >= 0; i--) {
-                dish.favoritesList.id(dish.favoritesList[i]._id).remove();
-            }
+            res.status(200).send('All favorites removed for this user');  
         });
     });
 
 // 2. /favorites/:dishObjectId route
 //    Handle getting/removing the specified dish from the user's list of favorites
 appRouter.route('/:dishObjectId')
-    // Get the dish info for a specific dish in a user's favorites list
-    .get(function (req, res, next) {
-        Dishes.findById(req.params.dishObjectId)
-            .populate('comments.postedBy')  // Use mongoose population to populate the "postedBy" field with the user info
-            .exec(function (err, dish) {
-                if (err) throw err;
-                res.json(dish);
-            })
-    })
 
     // Remove the specified dish from the user's favorites list
     .delete(Verify.verifyOrdinaryUser, function (req, res, next) {
         userId = req.decoded._doc._id;
-        Favorites.findById(userId, function (err, favoritesList) {
+        dishIdToRemove = req.params.dishObjectId;
+        Favorites.findOne({'user': userId}, function (err, favoritesList) {
             if (err) throw err;
-            Favorites.findById(userId, function (err, favoritesList) {
-                if (err) throw err;
-                favoritesList.id(req.params.dishObjectId).remove();
-                res.json(newFavoritesList);
-            });
+            if(favoritesList) {
+                dishRemoved = false;                         
+                for (var i = 0; i < favoritesList.dishes.length; i++) {                                                    
+                    if (favoritesList.dishes[i].toString() == dishIdToRemove) {
+                        favoritesList.dishes.splice(i, 1);                        
+                        dishRemoved = true;
+                        break;
+                    }
+                }
+                if (dishRemoved == true) {                      
+                    favoritesList.save(function (err, result) {
+                        if (err) throw err;
+                        res.json(result);
+                    });
+                }
+                else {
+                    res.status(400).send('Dish ' + dishIdToRemove + ' was not in the favorites list');    
+                }
+            }
+            else {
+                res.status(400).send('There are no dishes in the favorites list');    
+            }
         });
     });
 
